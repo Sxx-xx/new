@@ -49,6 +49,10 @@ Henes Broon T870은 사람이 타고 리모컨으로 모는 유아용 전동차�
 | [`pixhawk_pwm_check.ino`](pixhawk_pwm_check/pixhawk_pwm_check.ino), [`pixhawk_steering_dry_run.ino`](pixhawk_steering_dry_run/pixhawk_steering_dry_run.ino) | 진단. Pixhawk PWM 펄스폭 측정, 조향 모터를 돌리지 않고 요청 방향만 출력 |
 | [`ble_remote_bridge.ino`](ble_remote_bridge/ble_remote_bridge.ino) | 이전 시도. 순정 BLE 조종기 신호를 I2C로 넘기던 브리지. 지금의 수신기 브리지가 같은 보고서 형식을 이어받았다 |
 
+학습용: 주 펌웨어를 AUTOSAR Classic식 계층(MCAL · CDD · BSW · RTE · SWC)으로 나눈 [버전](study/autosar_style/t870_drive_layered)과,
+하드웨어 없이 PC에서 원본과 출력을 바이트 단위로 비교하는 [SIL 시뮬레이션](study/autosar_style/sil)이
+`study/autosar_style/`에 있다 (실차 미사용).
+
 ## 내 역할
 
 **소프트웨어 구조를 처음부터 끝까지 직접 만들고, 프로젝트 전체를 총괄했다.**
