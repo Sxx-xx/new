@@ -22,15 +22,19 @@ jobs:
             python3-pytest python3-opencv python3-numpy python3-serial \
             python3-pyproj python3-pil python3-pip
           # lane_camera_preview 가 모듈 첫 줄에서 torch / torchvision(LaneNet)을 import 한다.
-          # torchvision 의 의존성을 pip 로 받으면 numpy 2.x 가 apt numpy 위에 깔려
+          # 그 모듈은 /usr/local/lib/python3.12/dist-packages 를 sys.path 에서 빼므로
+          # pip 기본 위치가 아닌 별도 폴더에 설치하고 PYTHONPATH 로 붙인다.
+          # torchvision 의 의존성을 pip 로 받으면 numpy 2.x 가 apt numpy 를 가려
           # apt 의 OpenCV 가 깨지므로, torchvision 은 의존성 없이 받고 Pillow 는 apt 로 둔다.
-          pip3 install --break-system-packages --index-url https://download.pytorch.org/whl/cpu torch
-          pip3 install --break-system-packages --index-url https://download.pytorch.org/whl/cpu --no-deps torchvision
+          pip3 install --break-system-packages --target /opt/pydeps \
+            --index-url https://download.pytorch.org/whl/cpu torch
+          pip3 install --break-system-packages --target /opt/pydeps --no-deps \
+            --index-url https://download.pytorch.org/whl/cpu torchvision
 
       - name: pytest
         run: |
           source /opt/ros/jazzy/setup.bash
-          PYTHONPATH=src/t870_control:$PYTHONPATH python3 -m pytest src/t870_control/test -q
+          PYTHONPATH=src/t870_control:$PYTHONPATH:/opt/pydeps python3 -m pytest src/t870_control/test -q
 
   # 학습용 계층 펌웨어와 원본 펌웨어를 PC 에서 같은 입력으로 돌려 출력을 비교한다.
   sil-equivalence:
