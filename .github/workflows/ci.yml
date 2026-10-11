@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  # 판단 · 제어 로직 단위 테스트. README 의 실행 명령과 같은 방식이다.
+  ros2-tests:
+    runs-on: ubuntu-latest
+    container: ros:jazzy
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install test dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            python3-pytest python3-opencv python3-numpy python3-serial \
+            python3-pyproj python3-pil python3-pip
+          # lane_camera_preview 가 모듈 첫 줄에서 torch / torchvision(LaneNet)을 import 한다.
+          # torchvision 의 의존성을 pip 로 받으면 numpy 2.x 가 apt numpy 위에 깔려
+          # apt 의 OpenCV 가 깨지므로, torchvision 은 의존성 없이 받고 Pillow 는 apt 로 둔다.
+          pip3 install --break-system-packages --index-url https://download.pytorch.org/whl/cpu torch
+          pip3 install --break-system-packages --index-url https://download.pytorch.org/whl/cpu --no-deps torchvision
+
+      - name: pytest
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          PYTHONPATH=src/t870_control:$PYTHONPATH python3 -m pytest src/t870_control/test -q
+
+  # 학습용 계층 펌웨어와 원본 펌웨어를 PC 에서 같은 입력으로 돌려 출력을 비교한다.
+  sil-equivalence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends g++ make python3-pytest
+
+      - name: make test
+        working-directory: study/autosar_style/sil
+        run: make test
+
+  # 실차 펌웨어와 학습용 계층 버전이 Arduino UNO 대상으로 컴파일되는지 확인한다.
+  firmware-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: arduino/setup-arduino-cli@v2
+
+      - name: Install arduino:avr core
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install arduino:avr@1.8.8
+
+      - name: Compile sketch_aug
+        run: arduino-cli compile -b arduino:avr:uno --warnings all sketch_aug
+
+      - name: Compile t870_drive_layered
+        run: arduino-cli compile -b arduino:avr:uno --warnings all study/autosar_style/t870_drive_layered

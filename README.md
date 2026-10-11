@@ -10,6 +10,7 @@
 ![OpenCV](https://img.shields.io/badge/OpenCV-vision-5C3EE8?logo=opencv&logoColor=white)
 ![Ubuntu 24.04](https://img.shields.io/badge/Ubuntu-24.04-E95420?logo=ubuntu&logoColor=white)
 ![tests](https://img.shields.io/badge/tests-294%20passed-2ea44f)
+[![CI](https://github.com/Sxx-xx/t870-autonomous-driving/actions/workflows/ci.yml/badge.svg)](https://github.com/Sxx-xx/t870-autonomous-driving/actions/workflows/ci.yml)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/route_map_dark.png">
