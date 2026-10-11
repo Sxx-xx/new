@@ -16,14 +16,15 @@ from rclpy.qos import (
 from sensor_msgs.msg import NavSatFix, NavSatStatus
 from std_msgs.msg import Bool, UInt32
 
+from .workspace import find_workspace
+
 
 class GpsPathRecorder(Node):
     def __init__(self):
         super().__init__('gps_path_recorder')
         self.declare_parameter('fix_topic', '/gps/fix')
         self.declare_parameter(
-            'output_directory',
-            '/home/sxx/Desktop/colcon_ws./colcon_ws/colcon_ws/gps_recordings')
+            'output_directory', find_workspace() + '/gps_recordings')
         self.declare_parameter('path_name', '')
         self.declare_parameter('minimum_distance_m', 1.0)
         self.declare_parameter('target_speed', 1.0)

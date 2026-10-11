@@ -2,7 +2,7 @@
 # 주행 확인용. 터미널 3 에서 이것만 치면 된다.
 #   ./watch.sh
 # 상태 한 줄 + 중요 로그가 같이 흐른다. Ctrl-C 로 종료.
-WS=/home/sxx/Desktop/colcon_ws./colcon_ws/colcon_ws
+WS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"   # 이 스크립트가 있는 저장소 루트
 if [ -n "$CONDA_PREFIX" ]; then
   PATH=$(echo "$PATH" | tr ':' '\n' | grep -v conda | paste -sd:)
   unset CONDA_PREFIX CONDA_DEFAULT_ENV PYTHONHOME PYTHONPATH; export PATH

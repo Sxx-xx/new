@@ -17,6 +17,8 @@ from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Imu, NavSatFix, NavSatStatus
 from std_msgs.msg import Bool, Float32, String, UInt32
 
+from .workspace import find_workspace
+
 
 def wrap_angle(angle):
     return math.atan2(math.sin(angle), math.cos(angle))
@@ -318,9 +320,7 @@ class GpsPathFollower(Node):
             'imu_topic': '/mavros/imu/data',
             'output_topic': '/cmd_vel/gps',
             'tracking_log_enabled': True,
-            'tracking_log_directory': (
-                '/home/sxx/Desktop/colcon_ws./colcon_ws/colcon_ws/'
-                'gps_recordings'),
+            'tracking_log_directory': find_workspace() + '/gps_recordings',
             'control_rate_hz': 20.0,
             # Default GPS tracking speed: 10 km/h (also used when launched
             # directly without an overriding launch argument).

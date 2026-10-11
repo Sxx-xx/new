@@ -15,8 +15,10 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
+from t870_control.workspace import find_workspace
 
-WORKSPACE = '/home/sxx/Desktop/colcon_ws./colcon_ws/colcon_ws'
+
+WORKSPACE = find_workspace()
 LIDAR = ('/dev/serial/by-id/usb-Silicon_Labs_CP2102N_USB_to_UART_Bridge_'
          'Controller_dc29dffaaa31f111b5fb935f30d20014-if00-port0')
 ARDUINO = ('/dev/serial/by-id/'

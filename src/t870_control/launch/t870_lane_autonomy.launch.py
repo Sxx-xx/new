@@ -14,6 +14,8 @@ from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
+from t870_control.workspace import find_workspace
+
 
 def generate_launch_description():
     lidar_port = LaunchConfiguration('lidar_serial_port')
@@ -96,13 +98,13 @@ def generate_launch_description():
             description='녹화에 쓸 최저 fix. 2=RTK, 1=DGPS, 0=아무거나'),
         DeclareLaunchArgument(
             'gps_output_directory',
-            default_value='/home/sxx/Desktop/colcon_ws./colcon_ws/colcon_ws/gps_recordings'),
+            default_value=find_workspace() + '/gps_recordings'),
         DeclareLaunchArgument(
             'enable_gps_follower', default_value='false',
             description='Start saved GPS route follower and enable GPS PATH mode'),
         DeclareLaunchArgument(
             'gps_follow_path_file',
-            default_value='/home/sxx/Desktop/colcon_ws./colcon_ws/colcon_ws/gps_recordings/1.csv',
+            default_value=find_workspace() + '/gps_recordings/1.csv',
             description='Absolute CSV or TXT route file to follow'),
         # 2.7778 m/s is approximately 10.0 km/h.
         DeclareLaunchArgument('gps_follow_speed_mps', default_value='2.7778'),

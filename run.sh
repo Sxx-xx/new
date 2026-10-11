@@ -9,7 +9,7 @@
 
 # set -u 는 쓰지 않는다. ROS 의 setup.bash 가 미정의 변수를 참조해서
 # AMENT_TRACE_SETUP_FILES: unbound variable 로 죽는다.
-WS=/home/sxx/Desktop/colcon_ws./colcon_ws/colcon_ws
+WS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"   # 이 스크립트가 있는 저장소 루트
 PIXHAWK=/dev/serial/by-id/usb-Holybro_Pixhawk6C_45002F001451333531373234-if00
 WANT_MAVROS=1
 VIEW=dash

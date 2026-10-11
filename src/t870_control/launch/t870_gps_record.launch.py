@@ -6,6 +6,8 @@ from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
+from t870_control.workspace import find_workspace
+
 
 def generate_launch_description():
     gps_launch = PathJoinSubstitution([
@@ -18,7 +20,7 @@ def generate_launch_description():
             default_value='/dev/serial/by-id/usb-u-blox_AG_-_www.u-blox.com_u-blox_GNSS_receiver-if00'),
         DeclareLaunchArgument(
             'output_directory',
-            default_value='/home/sxx/Desktop/colcon_ws./colcon_ws/colcon_ws/gps_recordings'),
+            default_value=find_workspace() + '/gps_recordings'),
         DeclareLaunchArgument('path_name', default_value=''),
         DeclareLaunchArgument('minimum_distance_m', default_value='1.0'),
         DeclareLaunchArgument('target_speed', default_value='1.0'),
