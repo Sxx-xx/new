@@ -33,8 +33,21 @@ Henes Broon T870은 사람이 타고 리모컨으로 모는 유아용 전동차�
 | **내 역할** | 소프트웨어 구조 전체 설계 · 구현, 프로젝트 총괄 |
 | **주행** | RTK GPS 웨이포인트 약 700개를 Pure Pursuit으로 추종, 순항 8 km/h |
 | **미션** | 오르막 정지 · 신호등 · 정적/동적 장애물 · T주차 · 평행주차 · 표지 판정 |
-| **규모** | ROS 2 노드 29개, Arduino 펌웨어(구동 · 수신기 브리지), 경로 · 센서 진단 도구 10여 개 |
+| **규모** | ROS 2 노드 29개, Arduino 펌웨어([구동](sketch_aug/sketch_aug.ino) · [수신기 브리지](pwm_receiver_bridge/pwm_receiver_bridge.ino)), 경로 · 센서 진단 도구 10여 개 |
 | **검증** | 하드웨어 없이 도는 pytest 294개, 대회 설정값과 코드의 불일치를 테스트로 차단 |
+
+## Arduino 펌웨어
+
+차량 내장 제어보드를 우회해 모터를 직접 구동하는 계층이다. Arduino UNO 두 대가 I2C로 연결된다.
+이렇게 만든 배경은 [문제 해결 기록 1](#1-외부-입력을-무시하는-차량-구동-계층을-직접-만들다)에 있다.
+
+| 파일 | 역할 |
+| :--- | :--- |
+| [`sketch_aug.ino`](sketch_aug/sketch_aug.ino) | **주 펌웨어.** 엔코더 인터럽트 기반 속도 PI, 포텐셔미터 조향 위치 제어(소프트 리밋 · 센서 폴트 래치), 오르막 정차 홀드 토크, ROS 명령 워치독, 수신기 보고 타임아웃, 100 ms 텔레메트리 |
+| [`pwm_receiver_bridge.ino`](pwm_receiver_bridge/pwm_receiver_bridge.ino) | **수신기 브리지.** RC 수신기 3채널(조향 · 스로틀 · AUTO/MANUAL) PWM을 핀 변화 인터럽트로 동시에 읽고, 체크섬을 붙인 보고서로 I2C에 전달. 신호가 끊기면 연결 끊김과 0 명령을 보낸다 |
+| [`encoder_check.ino`](encoder_check/encoder_check.ino) | 진단. 모터를 돌리지 않고 D2~D6의 펄스 변화를 세어 엔코더 배선 확인 |
+| [`pixhawk_pwm_check.ino`](pixhawk_pwm_check/pixhawk_pwm_check.ino), [`pixhawk_steering_dry_run.ino`](pixhawk_steering_dry_run/pixhawk_steering_dry_run.ino) | 진단. Pixhawk PWM 펄스폭 측정, 조향 모터를 돌리지 않고 요청 방향만 출력 |
+| [`ble_remote_bridge.ino`](ble_remote_bridge/ble_remote_bridge.ino) | 이전 시도. 순정 BLE 조종기 신호를 I2C로 넘기던 브리지. 지금의 수신기 브리지가 같은 보고서 형식을 이어받았다 |
 
 ## 내 역할
 
@@ -133,6 +146,8 @@ flowchart LR
 엔코더로 속도 PI 제어를, 포텐셔미터로 조향 위치 제어를 한다. 상위 스택은 `/cmd_vel` 인터페이스를
 그대로 쓰므로 바꾸지 않았다. 펌웨어는 조종기 입력부터 모터 PWM까지 전 단계를 100 ms마다 한 줄로
 보고해, 차가 안 움직일 때 어느 단계에서 끊겼는지 바로 가려진다(`arduino_check.py`).
+
+코드: 주 펌웨어 [`sketch_aug.ino`](sketch_aug/sketch_aug.ino), 수신기 브리지 [`pwm_receiver_bridge.ino`](pwm_receiver_bridge/pwm_receiver_bridge.ino)
 
 ### 2. 브레이크가 없는 차를 세우기
 
