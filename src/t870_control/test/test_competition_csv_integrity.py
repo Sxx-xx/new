@@ -8,6 +8,8 @@ QGIS 로 다시 내보낼 때마다 같은 사고가 반복됐다.
 follower 가 읽는 방식(easting/northing 우선)과 같게 검사한다.
 """
 import csv
+import functools
+import importlib.util
 import io
 import math
 import re
@@ -17,9 +19,13 @@ import pytest
 LAUNCH = 'src/t870_control/launch/t870_competition.launch.py'
 
 
-def routes_dir():
-    source = io.open(LAUNCH, encoding='utf-8').read()
-    return re.search(r"ROUTES = WORKSPACE \+ '([^']+)'", source).group(1)
+@functools.lru_cache(maxsize=None)
+def launch_routes():
+    """launch 파일을 불러와, 실행할 때 쓰는 것과 같은 ROUTES 경로를 얻는다."""
+    spec = importlib.util.spec_from_file_location('t870_competition_launch', LAUNCH)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.ROUTES
 
 
 def launch_csv_names():
@@ -28,9 +34,7 @@ def launch_csv_names():
 
 
 def path_for(name):
-    source = io.open(LAUNCH, encoding='utf-8').read()
-    workspace = re.search(r"WORKSPACE = '([^']+)'", source).group(1)
-    return workspace + routes_dir() + '/' + name
+    return launch_routes() + '/' + name
 
 
 def load(name):

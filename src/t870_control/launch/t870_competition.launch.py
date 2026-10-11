@@ -3,6 +3,8 @@
 MAVROS must be started separately. The initial route is T1.csv.
 """
 
+from pathlib import Path
+
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -12,7 +14,21 @@ from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 
-WORKSPACE = '/home/sxx/Desktop/colcon_ws./colcon_ws/colcon_ws'
+def find_workspace():
+    """저장소 루트. 이 launch 파일에서 위로 올라가며 gps_recordings/대회용 이 있는 폴더를 찾는다.
+
+    소스 트리에서 열든, colcon install(심볼릭 링크 또는 복사, 저장소 안의 install_t870)
+    경로로 열든 같은 저장소를 가리킨다. 경로 CSV 는 현장에서 QGIS 로 고친 뒤 바로 쓰므로
+    패키지 share 에 설치하지 않고 저장소의 파일을 직접 읽는다.
+    """
+    for parent in Path(__file__).resolve().parents:
+        if (parent / 'gps_recordings' / '대회용').is_dir():
+            return str(parent)
+    raise RuntimeError(
+        'gps_recordings/대회용 을 찾지 못했다: ' + str(Path(__file__).resolve()))
+
+
+WORKSPACE = find_workspace()
 ROUTES = WORKSPACE + '/gps_recordings/대회용'
 LIDAR = ('/dev/serial/by-id/usb-Silicon_Labs_CP2102N_USB_to_UART_Bridge_'
          'Controller_dc29dffaaa31f111b5fb935f30d20014-if00-port0')

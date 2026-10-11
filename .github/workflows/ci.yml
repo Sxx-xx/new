@@ -31,16 +31,6 @@ jobs:
           pip3 install --break-system-packages --target /opt/pydeps --no-deps \
             --index-url https://download.pytorch.org/whl/cpu torchvision
 
-      # 대회 launch 는 실차 PC 의 절대 경로(WORKSPACE)로 경로 CSV 를 찾고,
-      # test_competition_csv_integrity 는 바로 그 경로의 CSV 를 검사한다.
-      # 코드는 그대로 두고, 같은 경로를 체크아웃 폴더에 대한 심볼릭 링크로 만든다.
-      - name: Link the launch WORKSPACE path to the checkout
-        run: |
-          WORKSPACE=$(python3 -c "import re; print(re.search(r\"WORKSPACE = '([^']+)'\", open('src/t870_control/launch/t870_competition.launch.py', encoding='utf-8').read()).group(1))")
-          echo "WORKSPACE=$WORKSPACE"
-          mkdir -p "$(dirname "$WORKSPACE")"
-          ln -s "$PWD" "$WORKSPACE"
-
       - name: pytest
         run: |
           source /opt/ros/jazzy/setup.bash
