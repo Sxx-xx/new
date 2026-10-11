@@ -26,10 +26,7 @@ const byte I2C_ADDRESS = 0x12;
 
 const uint16_t PWM_VALID_MIN_US = 800;
 const uint16_t PWM_VALID_MAX_US = 2200;
-// 일반 50 Hz 리시버는 약 20 ms마다 새 펄스를 보낸다. 120 ms 동안
-// 어느 한 채널이라도 이 시간 동안 들어오지 않으면 조종기/리시버 연결
-// 단절로 보고 connected=false와 0 명령을 메인 보드로 전달한다.
-// 짧은 무선/PWM 지연으로 주행 중 오검출하지 않도록 1초를 사용한다.
+// 짧은 무선/PWM 지연으로 오검출하지 않도록 1초를 사용한다.
 const uint32_t RC_TIMEOUT_US = 1000000UL;
 
 // Initial standard-RC calibration. Read the serial output after upload and
@@ -295,7 +292,7 @@ void setup()
   Serial.begin(115200);
   Serial.println(F("T870 standard PWM receiver bridge"));
   Serial.println(F("D4=steering D5=throttle D6=mode; I2C slave 0x12"));
-  Serial.println(F("PWM timeout 120 ms -> E-STOP, axes zero, connected=false"));
+  Serial.println(F("PWM timeout 1 s ->E-STOP, axes zero, connected=false"));
 }
 
 void loop()
