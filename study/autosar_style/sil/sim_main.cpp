@@ -2,6 +2,10 @@
 // SIL 시나리오 실행기
 //
 //   sil_xxx <scenario> <out.csv> <out_serial.txt>
+//   sil_can <scenario> <out.csv> <out_serial.txt> [--bus=...] (Mcal_Can_Sim.h 참고)
+//
+// sil_can 은 시리얼 입력을 읽지 않는다. 아래 시나리오가 넣는 시리얼 줄은 쌓이기만 하고,
+// 명령은 CAN 으로 온다. RC · Pixhawk · 경사 입력과 CSV 형식은 다른 빌드와 같다.
 //
 // 시나리오
 //   speed_step : AUTO, ROS 목표 0 -> 1.5 km/h 계단
@@ -17,6 +21,10 @@
 #include <string>
 
 #include "sim_core.h"
+
+#ifdef SIL_CAN
+#include "Mcal_Can_Sim.h"
+#endif
 
 
 struct Scenario
@@ -177,7 +185,11 @@ static const Scenario SCENARIOS[] = {
 
 int main(int argc, char **argv)
 {
+#ifdef SIL_CAN
+  if (argc < 4 || !SimCan_ParseArgs(argc - 4, argv + 4))
+#else
   if (argc != 4)
+#endif
   {
     fprintf(stderr, "usage: %s <speed_step|steering|watchdog|mixed> <out.csv> <out_serial.txt>\n", argv[0]);
     return 2;
@@ -209,8 +221,21 @@ int main(int argc, char **argv)
   sim::nowMs = 0;
   setup();
 
-  for (unsigned long t = 1; t <= scenario->durationMs; ++t)
+#ifdef SIL_CAN
+  if (!SimCan_WaitForStart())
   {
+    return 1;
+  }
+  const unsigned long durationMs = SimCan_Duration(scenario->durationMs);
+#else
+  const unsigned long durationMs = scenario->durationMs;
+#endif
+
+  for (unsigned long t = 1; t <= durationMs; ++t)
+  {
+#ifdef SIL_CAN
+    SimCan_BeforeLoop(t);
+#endif
     sim::nowMs = t;
     scenario->events(t);
 
@@ -233,6 +258,10 @@ int main(int argc, char **argv)
             sim::potValue, sim::steerPwm, sim::steerDirLevel);
   }
   fclose(csv);
+
+#ifdef SIL_CAN
+  SimCan_Close();
+#endif
 
   FILE *serial = fopen(argv[3], "w");
   if (!serial)

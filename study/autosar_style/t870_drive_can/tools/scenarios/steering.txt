@@ -1,0 +1,3 @@
+# sil 시나리오 steering. 조향 목표는 Pixhawk PWM 으로 들어오고 CAN 은 목표 0 만 보낸다.
+duration 9000
+0     mode=AUTO target=0 pot=543

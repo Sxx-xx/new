@@ -1,0 +1,4 @@
+# sil 시나리오 speed_step 의 ROS 명령을 CAN 으로 옮긴 것
+duration 12000
+0     mode=AUTO target=0 pot=543
+1000  target=1.5

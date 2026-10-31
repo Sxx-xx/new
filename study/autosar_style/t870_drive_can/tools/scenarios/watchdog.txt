@@ -1,0 +1,4 @@
+# sil 시나리오 watchdog. 5 s 에 노트북 송신이 끊긴다.
+duration 12000
+0     mode=AUTO target=1.5 pot=543
+5000  stop=1

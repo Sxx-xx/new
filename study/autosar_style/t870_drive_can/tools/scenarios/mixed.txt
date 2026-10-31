@@ -1,0 +1,26 @@
+# sil 시나리오 mixed 의 명령 부분. RC · Pixhawk · 경사는 sim_main.cpp 가 같은 시각에 넣는다.
+#
+# 시리얼   CAN
+#   e      mode=ESTOP (다음 명령까지 유지)
+#   h      mode=HOLD
+#   p40    sel=DRIVE duty=40
+#   s60    sel=STEER duty=60
+#   b      wd=1 / wd=0
+#   r      clear=1 의 상승 에지
+duration 32000
+0      mode=AUTO target=0 pot=543
+100    target=2.0
+6000   target=-1.0
+9000   mode=HOLD target=0
+12000  mode=ESTOP
+12500  mode=AUTO sel=DRIVE duty=40
+13500  sel=NONE duty=0 target=0
+13600  sel=STEER duty=60
+14000  duty=-60
+14300  duty=0
+14400  wd=1
+14500  wd=0 clear=1
+14520  clear=0 sel=NONE
+15000  mode=MANUAL
+23000  mode=AUTO target=3.0
+29000  mode=HOLD target=0

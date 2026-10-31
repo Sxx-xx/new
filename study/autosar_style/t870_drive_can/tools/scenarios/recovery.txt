@@ -1,0 +1,12 @@
+# E2E 고장 래치 해제 시험. 고장은 --fault 로 넣는다.
+# 5 s: 목표가 남아 있는 채로 해제 요청 -> 무시되어야 한다
+# 6 s: 목표 0 으로 해제 요청 -> 풀린다
+# 7 s: 새 목표 -> 다시 달린다
+duration 10000
+0     mode=AUTO target=1.5 pot=543
+5000  clear=1
+5100  clear=0
+6000  target=0
+6100  clear=1
+6200  clear=0
+7000  target=1.0

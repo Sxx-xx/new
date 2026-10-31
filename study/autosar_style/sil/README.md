@@ -126,10 +126,35 @@ $ make test
 
 시나리오 4개는 모두 원본과 같고, 바꾼 사본 3개는 모두 다르게 잡힌다.
 
+## CAN 버전: sil_can
+
+[`t870_drive_can`](../t870_drive_can)은 같은 코어와 시나리오로 돌되, 명령이 시리얼 대신 CAN으로 온다. RC · Pixhawk · 경사 입력과 CSV 형식은 다른 빌드와 같다. `SIL_CAN` 매크로로 `sim_main.cpp`에 버스 처리가 붙고, `Mcal_Can_Sim.cpp`가 실기판용 `Mcal_Can_Mcp2515.cpp`를 대신한다.
+
+| 버스 | 시간 | 프레임 |
+| :--- | :--- | :--- |
+| `--bus=mem --frames=<파일>` | 가상 시간. 결과가 매번 같다 | 인메모리. `can_cmd_sender.py --dump`가 만든 목록을 해당 ms에 넣는다 |
+| `--bus=vcan0` | 실시간 (`CLOCK_MONOTONIC`). 첫 프레임을 받으면 시작 | 실제 SocketCAN. `can_cmd_sender.py --bus vcan0`와 주고받는다 |
+
+```bash
+make can           # build/sil_can, build/com_roundtrip
+make test-can      # test_can.py (python-can, cantools, numpy 필요)
+make plot-can      # images/can_fault_crc.png, images/can_fault_timeout.png
+
+# 직접 실행
+T=../t870_drive_can/tools
+python3 $T/can_cmd_sender.py $T/scenarios/mixed.txt --dump /tmp/mixed.frames
+build/sil_can mixed /tmp/a.csv /tmp/a.txt --bus=mem --frames=/tmp/mixed.frames --tx-log=/tmp/tx.txt
+
+build/sil_can speed_step /tmp/b.csv /tmp/b.txt --bus=vcan0 &
+python3 $T/can_cmd_sender.py $T/scenarios/speed_step.txt --bus vcan0 --record /tmp/status.csv
+```
+
+결과와 허용 오차는 [`t870_drive_can/README.md`](../t870_drive_can/README.md#테스트)에 있다. `make test`와 `make all`에는 넣지 않았다. CI의 `sil-equivalence` 작업에 python-can과 cantools가 없기 때문이다.
+
 ## 이 시뮬레이션이 보장하지 않는 것
 
 - **실차 응답**: 플랜트가 가정값이므로 그래프의 시간 · 오버슈트 · duty 수치는 실차와 다르다.
 - **AVR 부동소수 결과**: PC에서는 `double`이 64비트이고 `1000.0` 같은 리터럴도 64비트로 계산한다. AVR에서는 둘 다 32비트다. 동등성은 "같은 PC 컴파일러에서 원본과 계층 버전이 같다"는 뜻이지, AVR에서 나올 숫자와 같다는 뜻이 아니다.
 - **Mcal 자체**: SIL에서는 `Mcal_*.cpp`를 `Mcal_Sim.cpp`로 바꿔 끼우므로 실기판용 Mcal 코드는 실행되지 않는다. 실기판용 Mcal이 원본 레지스터 코드와 같은지는 코드 대조로만 확인했다.
 - **타이밍과 인터럽트 경합**: 실제 loop는 1 ms보다 훨씬 빠르다. 엔코더 · Pixhawk 인터럽트는 loop와 loop 사이에만 들어온다. loop 도중에 끼어드는 인터럽트나 실행 시간 차이로 생기는 문제는 재현하지 않는다.
-- **통신 오류**: I2C 보고서는 항상 온전히 오고, 시리얼은 글자가 빠지지 않는다. 깨진 프레임 처리는 시험하지 않는다.
+- **통신 오류**: I2C 보고서는 항상 온전히 오고, 시리얼은 글자가 빠지지 않는다. 깨진 프레임 처리는 CAN 경로(`test_can.py`)에서만 시험한다. 그것도 송신기가 일부러 낸 고장이고, vcan에는 실제 버스의 비트 오류나 중재가 없다.

@@ -1,0 +1,68 @@
+VERSION "1"
+
+NS_ :
+	CM_
+	BA_DEF_
+	BA_
+	BA_DEF_DEF_
+	VAL_
+
+BS_:
+
+BU_: LAPTOP ECU
+
+BO_ 256 DriveCmd: 8 LAPTOP
+ SG_ TargetSpeed_kmh : 0|16@1- (0.01,0) [-327.68|327.67] "km/h" ECU
+ SG_ SteerTargetPot : 16|16@1+ (1,0) [0|1023] "count" ECU
+ SG_ Mode : 32|2@1+ (1,0) [0|3] "" ECU
+ SG_ OpenLoopSel : 34|2@1+ (1,0) [0|2] "" ECU
+ SG_ Alive : 36|4@1+ (1,0) [0|15] "" ECU
+ SG_ OpenLoopDuty : 40|10@1- (1,0) [-255|255] "duty" ECU
+ SG_ WatchdogDisable : 50|1@1+ (1,0) [0|1] "" ECU
+ SG_ LatchClearReq : 51|1@1+ (1,0) [0|1] "" ECU
+ SG_ CRC8 : 56|8@1+ (1,0) [0|255] "" ECU
+
+BO_ 512 DriveStatus: 8 ECU
+ SG_ MeasuredSpeed_kmh : 0|16@1- (0.01,0) [-327.68|327.67] "km/h" LAPTOP
+ SG_ SteerPot : 16|16@1+ (1,0) [0|1023] "count" LAPTOP
+ SG_ DrivePwm : 32|8@1+ (1,0) [0|255] "duty" LAPTOP
+ SG_ SteerPwm : 40|8@1+ (1,0) [0|255] "duty" LAPTOP
+ SG_ FaultSteer : 48|1@1+ (1,0) [0|1] "" LAPTOP
+ SG_ FaultStall : 49|1@1+ (1,0) [0|1] "" LAPTOP
+ SG_ FaultWatchdog : 50|1@1+ (1,0) [0|1] "" LAPTOP
+ SG_ FaultE2E : 51|1@1+ (1,0) [0|1] "" LAPTOP
+ SG_ Alive : 52|4@1+ (1,0) [0|15] "" LAPTOP
+ SG_ CRC8 : 56|8@1+ (1,0) [0|255] "" LAPTOP
+
+BO_ 513 DriveDiag: 8 ECU
+ SG_ CrcErrorCount : 0|16@1+ (1,0) [0|65535] "" LAPTOP
+ SG_ AliveJumpCount : 16|16@1+ (1,0) [0|65535] "" LAPTOP
+ SG_ AliveRepeatCount : 32|8@1+ (1,0) [0|255] "" LAPTOP
+ SG_ TimeoutCount : 40|8@1+ (1,0) [0|255] "" LAPTOP
+ SG_ E2EState : 48|3@1+ (1,0) [0|4] "" LAPTOP
+ SG_ Alive : 52|4@1+ (1,0) [0|15] "" LAPTOP
+ SG_ CRC8 : 56|8@1+ (1,0) [0|255] "" LAPTOP
+
+CM_ BO_ 256 "Laptop to ECU drive command. CRC8 is SAE J1850 over bytes 0..6 then E2E_DataID.";
+CM_ SG_ 256 SteerTargetPot "Carried but not connected to steering control. AUTO steering target stays Pixhawk PWM.";
+CM_ SG_ 256 Mode "Laptop command mode. The physical RC switch still decides AUTO or MANUAL.";
+CM_ SG_ 256 WatchdogDisable "Level signal replacing the serial b toggle. Does not disable E2E monitoring.";
+CM_ SG_ 256 LatchClearReq "Rising edge replaces the serial r command.";
+CM_ BO_ 512 "ECU to laptop status.";
+CM_ BO_ 513 "ECU to laptop E2E receive diagnostics. Counters saturate.";
+
+BA_DEF_ BO_ "GenMsgCycleTime" INT 0 65535;
+BA_DEF_ BO_ "E2E_DataID" INT 0 255;
+BA_DEF_DEF_ "GenMsgCycleTime" 0;
+BA_DEF_DEF_ "E2E_DataID" 0;
+
+BA_ "GenMsgCycleTime" BO_ 256 20;
+BA_ "GenMsgCycleTime" BO_ 512 100;
+BA_ "GenMsgCycleTime" BO_ 513 500;
+BA_ "E2E_DataID" BO_ 256 16;
+BA_ "E2E_DataID" BO_ 512 32;
+BA_ "E2E_DataID" BO_ 513 33;
+
+VAL_ 256 Mode 0 "MANUAL" 1 "AUTO" 2 "HOLD" 3 "ESTOP" ;
+VAL_ 256 OpenLoopSel 0 "NONE" 1 "DRIVE" 2 "STEER" ;
+VAL_ 513 E2EState 0 "OK" 1 "WRONG_CRC" 2 "REPEATED" 3 "WRONG_SEQ" 4 "NO_NEW_DATA" ;
