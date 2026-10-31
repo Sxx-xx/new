@@ -44,7 +44,7 @@ BO_ 513 DriveDiag: 8 ECU
  SG_ CRC8 : 56|8@1+ (1,0) [0|255] "" LAPTOP
 
 CM_ BO_ 256 "Laptop to ECU drive command. CRC8 is SAE J1850 over bytes 0..6 then E2E_DataID.";
-CM_ SG_ 256 SteerTargetPot "Carried but not connected to steering control. AUTO steering target stays Pixhawk PWM.";
+CM_ SG_ 256 SteerTargetPot "Reserved. Not connected to steering control. AUTO steering target stays Pixhawk PWM.";
 CM_ SG_ 256 Mode "Laptop command mode. The physical RC switch still decides AUTO or MANUAL.";
 CM_ SG_ 256 WatchdogDisable "Level signal replacing the serial b toggle. Does not disable E2E monitoring.";
 CM_ SG_ 256 LatchClearReq "Rising edge replaces the serial r command.";

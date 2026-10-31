@@ -32,7 +32,7 @@ Swc_SpeedControl · Swc_SteeringControl · Swc_StopHold     (layered 와 바이�
 | `Swc_*` | **없음.** `test_can.py`가 layered와 바이트 비교한다 |
 | 새 파일 | `Mcal_Can.h`, `Mcal_Can_Mcp2515.cpp`, `CanIf`, `Com`, `E2E`, `Cdd_CanGateway`, 생성 파일 `Com_Cfg.h` |
 | `Cdd_SerialCmd.*` | 삭제 |
-| `Mcal_Cfg.h` | 구동 DIR을 D11 → D4, MCP2515 CS · INT, 크리스털 |
+| `Mcal_Cfg.h` | 구동 DIR을 D11 → D4, 모드 스위치 자리를 D12 → A2, MCP2515 CS · INT, 크리스털 |
 | `Rte.h/.cpp` | `Rte_Read_SteerPwm`, `Rte_Read_Watchdog_Expired`, `Rte_Read_FaultLatch_E2e`, `Rte_Notify_ComSafeState` 추가 |
 | `Bsw_FaultLatch` | E2E 래치 추가. `ClearAll`이 함께 지운다 |
 | `Bsw_Watchdog` | 만료 상태 읽기 추가 (DriveStatus의 `FaultWatchdog`) |
@@ -54,7 +54,7 @@ Swc_SpeedControl · Swc_SteeringControl · Swc_StopHold     (layered 와 바이�
 | 신호 | 비트 | 형식 | 값 |
 | :--- | --: | :--- | :--- |
 | `TargetSpeed_kmh` | 0 \| 16 | int16, 0.01 km/h/bit | ±327.67. 실제 제한은 Swc의 ±10 km/h |
-| `SteerTargetPot` | 16 \| 16 | uint16 | 0~1023. **전달만 하고 조향 제어에 연결하지 않았다** (아래) |
+| `SteerTargetPot` | 16 \| 16 | uint16 | 0~1023. **예약 신호. 미연결** (아래) |
 | `Mode` | 32 \| 2 | enum | 0 MANUAL, 1 AUTO, 2 HOLD, 3 ESTOP |
 | `OpenLoopSel` | 34 \| 2 | enum | 0 NONE, 1 DRIVE, 2 STEER |
 | `Alive` | 36 \| 4 | uint4 | 프레임마다 +1 |
@@ -95,7 +95,7 @@ Swc_SpeedControl · Swc_SteeringControl · Swc_StopHold     (layered 와 바이�
 
 **RC 스위치가 여전히 AUTO/MANUAL을 정한다.** `Mode=MANUAL`은 "노트북이 AUTO 명령을 내지 않는다"는 뜻으로 목표 0처럼 처리하고, 물리 스위치를 덮어쓰지 않는다.
 
-**`SteerTargetPot`은 조향에 연결하지 않았다.** AUTO 조향 목표는 `Swc_SteeringControl`이 Pixhawk PWM(D8)에서 직접 계산한다. 시리얼 경로에도 조향 목표 명령은 없었다. CAN 목표를 쓰려면 Swc를 고쳐야 하므로 신호 자리만 잡아 뒀다.
+**`SteerTargetPot`은 DBC의 예약 신호이고 미연결이다.** 프레임에 실려 오지만 `Cdd_CanGateway`가 읽지 않아 조향에 영향이 없다. AUTO 조향 목표는 `Swc_SteeringControl`이 Pixhawk PWM(D8)에서 직접 계산한다. 시리얼 경로에도 조향 목표 명령은 없었다.
 
 ## E2E와 안전 상태
 
@@ -115,14 +115,16 @@ Swc_SpeedControl · Swc_SteeringControl · Swc_StopHold     (layered 와 바이�
 - **처리(`Rte_Notify_ComSafeState`)**: 기존 워치독 처리에 비상정지를 더한다. 워치독 처리만으로는 감속 정지라 PWM이 바로 안 끊기고, 비상정지만으로는 조향 개루프가 안 꺼져서 둘 다 부른다. E2E 래치도 세운다.
 - **물리 RC MANUAL이면 구동 출력을 건드리지 않는다.** 기존 `OnEmergencyStopCmd`의 조건 그대로다. RC 주행은 노트북과 무관하게 유지된다.
 - **AUTO 조향은 계속 Pixhawk를 따른다.** 안전 상태가 끄는 것은 구동 출력과 개루프다.
-- **자동 복귀하지 않는다.** 통신이 돌아와도 정지를 유지한다. 해제는 정상 프레임의 `LatchClearReq` 상승 에지이고, 그 프레임의 목표가 0이고 개루프가 꺼져 있어야 한다. 옛 목표로 저절로 출발하지 않게 하려는 것이다.
+- **자동 복귀하지 않는다.** 통신이 돌아와도 정지를 유지한다. 해제는 정상 프레임의 `LatchClearReq` 상승 에지이고, 그 프레임의 목표가 0이고 개루프가 꺼져 있어야 한다.
+- **복귀 정책의 근거**: 통신이 언제 돌아올지 알 수 없으므로, 자동 복귀를 두면 차가 고장 전 목표로 예고 없이 출발한다.
 
 ## 핀 배치 (Arduino Uno)
 
-MCP2515의 SPI가 D11~D13을 쓰므로 D11의 구동 DIR을 옮겼다. D12는 `sketch_aug`에 "모드 스위치(미구현)" 주석만 있고 코드에서 쓰지 않아 충돌이 없다.
+Uno의 SPI는 D11(MOSI), D12(MISO), D13(SCK)로 고정이다. 그래서 D11의 구동 DIR과 D12의 모드 스위치를 옮겼다. `test_pin_map_has_no_conflicts`가 `Mcal_Cfg.h`의 핀 번호를 검사한다.
 
 | Uno 핀 | layered | 이 버전 |
 | :--- | :--- | :--- |
+| D0, D1 | USB 시리얼 | 그대로 (디버그 출력) |
 | D2, D3 | 엔코더 A, B | 그대로 |
 | **D4** | | **구동 DIR (D11에서 옮김)** |
 | **D5** | | **MCP2515 INT** |
@@ -132,12 +134,35 @@ MCP2515의 SPI가 D11~D13을 쓰므로 D11의 구동 DIR을 옮겼다. D12는 `s
 | D9 | 조향 PWM | 그대로 |
 | D10 | 구동 PWM | 그대로 (하드웨어 SS 핀, 아래 주의) |
 | **D11** | 구동 DIR | **MCP2515 SI (MOSI)** |
-| **D12** | | **MCP2515 SO (MISO)** |
+| **D12** | 모드 스위치 (미구현) | **MCP2515 SO (MISO)** |
 | **D13** | | **MCP2515 SCK** |
 | A0 | 조향 POT | 그대로 |
+| A1 | 배터리 전압 감시 (미구현) | 그대로 |
+| **A2** | | **모드 스위치 (D12에서 옮김, 미구현)** |
+| A3 | | 비어 있음 |
 | A4, A5 | I2C (보조 RC 보드) | 그대로 |
 
-INT는 폴링으로 읽는다. 외부 인터럽트 D2/D3은 엔코더가 쓰고, 20 ms 주기 프레임은 폴링으로 충분하다.
+`Cdd_RemoteRx.h`의 D4/D5/D6은 **보조 보드의** RC 입력 핀이다. 이 Uno의 D4/D5/D6과 다른 핀이다.
+
+### 충돌 확인
+
+| 항목 | 결론 | 근거 |
+| :--- | :--- | :--- |
+| D12 모드 스위치 ↔ MISO | **A2로 옮긴다** | 디지털 핀은 전부 찼다. A1은 배터리 감시 예약이라 A2를 쓴다. PCINT10이라 D8(PCINT0)과 인터럽트 벡터도 갈린다 |
+| MCP2515 CS ↔ D10 구동 PWM | 겹치지 않는다 | CS는 D6이다. 라이브러리 예제의 `MCP2515(10)`을 그대로 쓰면 겹친다 |
+| MCP2515 INT ↔ D2 엔코더 | 겹치지 않는다 | INT는 D5이고 `digitalRead`로 폴링한다. 외부 인터럽트(D2 INT0)를 쓰지 않는다. 20 ms 주기 프레임은 폴링으로 충분하다 |
+| D5, D6 ↔ Timer0 | 겹치지 않는다 | 이 핀에 `analogWrite`를 쓰지 않는다. `millis()`용 Timer0은 그대로 돈다 |
+| D13 ↔ 보드 LED | 겹치지 않는다 | 펌웨어가 LED를 쓰지 않는다. SPI 통신 때 LED가 깜빡이는 것은 정상이다 |
+
+### 남는 핀
+
+| 핀 | 상태 | 쓸 수 있는 용도 |
+| :--- | :--- | :--- |
+| A3 | 비어 있음 | 디지털 입출력, 아날로그 입력 |
+| A1 | 배터리 감시 예약 (미구현) | 배터리 감시를 안 하기로 하면 A3과 같다 |
+| A2 | 모드 스위치 예약 (미구현) | 모드 스위치를 안 달기로 하면 A3과 같다 |
+
+당장 비어 있는 핀은 A3 하나다. 예약을 풀어도 세 개이고 디지털 핀(D0~D13)은 남지 않는다.
 
 **D10 주의.** 라이브러리의 `MCP2515` 생성자는 `SPI.begin()`을 부르고, `SPI.begin()`은 SS(D10)가 아직 입력이면 HIGH를 쓴 뒤 출력으로 바꾼다. 객체를 전역으로 두면 `setup()` 전에 구동 PWM 핀이 HIGH가 되어 **구동 모터가 duty 100%를 받는다.** 그래서 `Mcal_Can_Init()` 안의 지역 static으로 두고 `Mcal_Port_Init()` 다음에 부른다. 테스트가 이 순서를 확인한다. 라이브러리 소스를 읽어 확인한 내용이고 실기판에서 측정하지는 않았다.
 
@@ -252,6 +277,8 @@ MCP2515 모듈의 크리스털 캔에 적힌 값을 읽고 `Mcal_Cfg.h`의 `MCAL
 
 **모터 드라이버 DIR 선을 D11에서 D4로 먼저 옮긴다.** 그 뒤 극성(`MCAL_DRIVE_DIR_FORWARD_LEVEL`)을 저속으로 다시 확인한다.
 
+**D12에 모드 스위치 선이 있으면 뽑는다.** 코드에서 안 쓰는 핀이어도 선이 남아 있으면 MISO 신호와 부딪힌다. 스위치를 달 때는 A2에 잇는다.
+
 ### 3. CAN 버스
 
 - CANH끼리, CANL끼리, 그리고 노트북(CANable) GND와 Uno GND를 잇는다.
@@ -267,13 +294,13 @@ candump can0                      # 0x200 이 100 ms 마다 보여야 한다
 tools/can_cmd_sender.py tools/scenarios/speed_step.txt --bus can0 --record status.csv
 ```
 
-### 5. 확인 순서
+### 5. 실차 전 확인
 
 1. Uno만 켠 채 `candump can0`에 0x200이 보이는지 본다. 시리얼에 `CAN INIT FAILED`가 나오면 SPI 배선과 크리스털을 본다.
 2. 전원 투입 순간 D10을 오실로스코프나 로직 분석기로 보고 HIGH 펄스가 없는지 확인한다.
 3. 목표 0을 보내며 `DriveDiag` 카운터가 늘지 않는지 본다.
 4. USB-CAN을 뽑아 약 100 ms 안에 `E2E-FAULT`가 뜨고 PWM이 끊기는지 본다.
-5. 실제 노트북의 송신 지터를 `can_cmd_sender.py`가 출력하는 `interval_ms`로 확인한다. 100 ms 타임아웃에 가까운 간격이 나오면 `E2E_RX_TIMEOUT_MS`를 재검토한다.
+5. **CANable로 송신 지터를 다시 잰다.** 임계값(연속 3 프레임, 타임아웃 100 ms)은 `vcan0`에서 정한 값이고, USB-CAN 경로의 지연은 재 본 적이 없다. CPU 부하를 건 상태로 `can_cmd_sender.py`가 출력하는 `interval_ms` 최대값과 `DriveDiag`의 `TimeoutCount`를 본다. 100 ms에 가까운 간격이 나오거나 `TimeoutCount`가 늘면 `E2E_RX_TIMEOUT_MS`를 재검토한다.
 
 ## 이 구조가 보장하지 않는 것
 
@@ -281,4 +308,4 @@ tools/can_cmd_sender.py tools/scenarios/speed_step.txt --bus can0 --record statu
 - **실제 CAN 오류**: vcan에는 중재, 비트 오류, 재전송, 지연이 없다. 고장 주입은 송신기에서 일부러 낸 것이다.
 - **AVR 실행 시간**: 200 ms 상태 줄 출력은 시리얼 버퍼(64 B)를 넘어 수 ms 블로킹할 수 있다. MCP2515 수신 버퍼 2개가 그 사이를 버티는지는 실기판에서 재 봐야 한다.
 - **노트북 쪽 ROS**: `src/t870_control`의 ROS 노드는 여전히 시리얼을 쓴다. 이 폴더는 시나리오 파일 송신기까지만 있다.
-- **CI**: GitHub Actions의 `make test`, 펌웨어 빌드 작업에 이 폴더는 들어 있지 않다.
+- **CI**: `sil-can` 작업이 `make test-can`을 돌린다. 펌웨어 빌드 작업에는 이 폴더가 없어서 `Mcal_Can_Mcp2515.cpp`의 컴파일은 CI가 확인하지 않는다.

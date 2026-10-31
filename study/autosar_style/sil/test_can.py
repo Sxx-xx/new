@@ -19,6 +19,7 @@ import filecmp
 import importlib.util
 import pathlib
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -213,6 +214,46 @@ def test_drive_pwm_pin_is_set_before_can_init():
     assert source.index('Mcal_Port_Init();') < source.index('Cdd_CanGateway_Init();')
     mcal = (CAN_DIR / 'Mcal_Can_Mcp2515.cpp').read_text()
     assert 'static MCP2515 instance(' in mcal.split('bool Mcal_Can_Init()')[1]
+
+
+# Uno 에서 고정이거나 Mcal_Cfg.h 밖에서 이미 쓰는 핀. A0 = 14 이므로 A4, A5 = 18, 19.
+RESERVED_PINS = {
+    0: 'USB 시리얼 RX', 1: 'USB 시리얼 TX',
+    11: 'SPI MOSI', 12: 'SPI MISO', 13: 'SPI SCK',
+    15: '배터리 감시 예약(A1)', 18: 'I2C SDA', 19: 'I2C SCL',
+}
+
+
+def read_pin_map():
+    pins = {}
+    for name, value in re.findall(r'^#define (MCAL_PIN_\w+)\s+(A?\d+)', (CAN_DIR / 'Mcal_Cfg.h').read_text(), re.M):
+        pins[name] = 14 + int(value[1:]) if value.startswith('A') else int(value)
+    return pins
+
+
+def test_pin_map_has_no_conflicts():
+    pins = read_pin_map()
+    assert len(pins) == 11
+
+    assert len(set(pins.values())) == len(pins), pins
+    assert not {name: pin for name, pin in pins.items() if pin in RESERVED_PINS}
+
+    # 모드 스위치는 원본 D12 에서 옮겼고, D8 의 PCINT0 벡터(D8~D13)를 같이 쓰지 않는다.
+    assert pins['MCAL_PIN_MODE_SWITCH'] == 16
+    # CS 는 라이브러리 예제의 D10(구동 PWM)이 아니고, INT 는 엔코더 외부 인터럽트 핀이 아니다.
+    assert pins['MCAL_PIN_CAN_CS'] != pins['MCAL_PIN_DRIVE_PWM']
+    assert pins['MCAL_PIN_CAN_INT'] not in (pins['MCAL_PIN_ENCODER_A'], pins['MCAL_PIN_ENCODER_B'])
+    # INT 는 폴링이다. 외부 인터럽트는 엔코더 하나뿐이어야 한다.
+    sources = [path.read_text() for path in CAN_DIR.glob('*.cpp')]
+    attached = [line for text in sources for line in text.splitlines() if 'attachInterrupt(' in line]
+    assert len(attached) == 1 and 'MCAL_PIN_ENCODER_A' in attached[0]
+
+
+def test_steer_target_pot_is_reserved_only():
+    # DBC 예약 신호다. 생성 헤더 밖에서 읽으면 조향에 연결된 것이다.
+    users = [path.name for path in CAN_DIR.glob('*.*')
+             if path.suffix in ('.cpp', '.h', '.ino') and 'SteerTargetPot' in path.read_text()]
+    assert users == ['Com_Cfg.h']
 
 
 # ------------------------------------------------------------

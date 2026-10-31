@@ -4,17 +4,20 @@
 // D2  : 구동 엔코더 A상 (INT0)
 // D3  : 구동 엔코더 B상
 // D4  : 구동 DIR           (layered 의 D11 에서 옮김. D11 은 SPI MOSI)
-// D5  : MCP2515 INT        (폴링으로 읽는다. D2/D3 외부 인터럽트는 엔코더가 쓴다)
-// D6  : MCP2515 CS
+// D5  : MCP2515 INT        (폴링으로 읽는다. 외부 인터럽트를 쓰지 않아 D2 와 무관하다)
+// D6  : MCP2515 CS         (라이브러리 예제의 D10 은 구동 PWM 이라 쓸 수 없다)
 // D7  : 조향 DIR
 // D8  : Pixhawk PWM 입력   (PCINT0)
 // D9  : 조향 PWM           (Timer1)
 // D10 : 구동 PWM           (Timer1). 하드웨어 SS 핀이기도 하다. 출력이므로
 //                           SPI 마스터 모드가 유지된다.
 // D11 : MCP2515 SI  (SPI MOSI)
-// D12 : MCP2515 SO  (SPI MISO). 원본 주석의 모드 스위치는 미구현이라 코드에서 안 쓴다.
+// D12 : MCP2515 SO  (SPI MISO). 원본의 모드 스위치 자리는 A2 로 옮겼다.
 // D13 : MCP2515 SCK (SPI SCK)
 // A0  : 조향 포텐셔미터
+// A1  : 배터리 전압 감시   (원본 예약, 미구현)
+// A2  : 모드 스위치 입력   (원본 D12 에서 옮김, 미구현. PCINT10 이라 D8 과 벡터가 다르다)
+// A3  : 비어 있음
 // A4/A5 : I2C (보조 RC 수신기 보드)
 // ============================================================
 
@@ -33,6 +36,7 @@
 #define MCAL_PIN_CAN_INT     5
 #define MCAL_PIN_CAN_CS      6
 #define MCAL_PIN_STEER_POT   A0
+#define MCAL_PIN_MODE_SWITCH A2   // 예약. 아직 코드에서 읽지 않는다
 
 // MCP2515 모듈의 크리스털. 모듈 위 캔에 적힌 값(8.000 또는 16.000)에 맞춘다.
 // 틀리면 비트레이트가 두 배로 어긋나 통신이 전혀 안 된다.

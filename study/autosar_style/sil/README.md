@@ -149,7 +149,7 @@ build/sil_can speed_step /tmp/b.csv /tmp/b.txt --bus=vcan0 &
 python3 $T/can_cmd_sender.py $T/scenarios/speed_step.txt --bus vcan0 --record /tmp/status.csv
 ```
 
-결과와 허용 오차는 [`t870_drive_can/README.md`](../t870_drive_can/README.md#테스트)에 있다. `make test`와 `make all`에는 넣지 않았다. CI의 `sil-equivalence` 작업에 python-can과 cantools가 없기 때문이다.
+결과와 허용 오차는 [`t870_drive_can/README.md`](../t870_drive_can/README.md#테스트)에 있다. `make test`와 `make all`에는 넣지 않았다. python-can과 cantools가 필요해서 CI에서도 `sil-can` 작업으로 따로 돌린다.
 
 ## 이 시뮬레이션이 보장하지 않는 것
 

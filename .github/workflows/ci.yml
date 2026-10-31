@@ -51,6 +51,33 @@ jobs:
         working-directory: study/autosar_style/sil
         run: make test
 
+  # CAN 명령 경로. pack/unpack, 시리얼 버전과의 동등성, E2E 고장 주입을 vcan0 까지 돌린다.
+  sil-can:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            g++ make python3-pytest python3-numpy python3-pip \
+            linux-modules-extra-$(uname -r)
+          /usr/bin/python3 -m pip install --break-system-packages \
+            python-can==4.6.1 cantools==45.1.2
+
+      # vcan0 이 없으면 테스트가 건너뛰므로, 여기서 실패시켜 조용히 빠지지 않게 한다.
+      - name: Bring up vcan0
+        run: |
+          sudo modprobe vcan
+          sudo ip link add dev vcan0 type vcan
+          sudo ip link set up vcan0
+          ip link show vcan0
+
+      - name: make test-can
+        working-directory: study/autosar_style/sil
+        run: make test-can
+
   # 실차 펌웨어와 학습용 계층 버전이 Arduino UNO 대상으로 컴파일되는지 확인한다.
   firmware-build:
     runs-on: ubuntu-latest
