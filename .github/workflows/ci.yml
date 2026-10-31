@@ -61,8 +61,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            g++ make python3-pytest python3-numpy python3-pip \
-            linux-modules-extra-$(uname -r)
+            g++ make python3-pytest python3-numpy python3-pip
           /usr/bin/python3 -m pip install --break-system-packages \
             python-can==4.6.1 cantools==45.1.2
 
